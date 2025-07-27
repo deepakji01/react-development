@@ -1,0 +1,152 @@
+import React, { useState, useEffect } from 'react';
+
+// API to get random quotes
+// This is a free, public API: https://type.fit/api/quotes
+const QUOTE_API_URL = 'https://type.fit/api/quotes';
+
+function QuoteFetcher() {
+  const [quote, setQuote] = useState(null);       // Stores the current quote object {text, author}
+  const [isLoading, setIsLoading] = useState(true); // Tracks loading state
+  const [error, setError] = useState('');         // Stores error messages
+  const [fetchTrigger, setFetchTrigger] = useState(0); // Used to re-fetch a new quote
+
+  // useEffect Hook for fetching data
+  // This effect runs:
+  // 1. Once after the initial render (because of `[]` for initial setup)
+  // 2. Whenever `fetchTrigger` changes (to get a new quote)
+  useEffect(() => {
+    const fetchRandomQuote = async () => {
+      setIsLoading(true); // Start loading
+      setError('');       // Clear previous errors
+      setQuote(null);     // Clear previous quote
+
+      try {
+        const response = await fetch(QUOTE_API_URL); // Make API request
+
+        // Check if the response was successful (status code 200-299)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json(); // Parse JSON response
+
+        // The API returns an array of quotes. Pick a random one.
+        if (data && data.length > 0) {
+          const randomIndex = Math.floor(Math.random() * data.length);
+          setQuote(data[randomIndex]); // Set the random quote to state
+        } else {
+          throw new Error('No quotes found.');
+        }
+
+      } catch (err) {
+        // Catch any errors during fetch or parsing
+        console.error("Failed to fetch quote:", err);
+        setError('Failed to fetch quote. Please try again.');
+      } finally {
+        setIsLoading(false); // Stop loading regardless of success or failure
+      }
+    };
+
+    fetchRandomQuote(); // Call the async function immediately inside useEffect
+
+  }, [fetchTrigger]); // Dependency array: Re-run this effect when fetchTrigger changes
+
+  // Function to trigger a new quote fetch
+  const handleNewQuote = () => {
+    // Incrementing fetchTrigger will cause the useEffect to re-run
+    setFetchTrigger(prev => prev + 1);
+  };
+
+  return (
+    <div style={styles.container}>
+      <h1>Random Quote Generator</h1>
+
+      {isLoading && <p style={styles.message}>Loading a wonderful quote...</p>}
+
+      {error && <p style={styles.error}>{error}</p>}
+
+      {quote && !isLoading && !error && (
+        <div style={styles.quoteCard}>
+          <p style={styles.quoteText}>"{quote.text}"</p>
+          <p style={styles.quoteAuthor}>- {quote.author || 'Unknown'}</p>
+        </div>
+      )}
+
+      <button onClick={handleNewQuote} disabled={isLoading} style={styles.button}>
+        {isLoading ? 'Fetching...' : 'Get New Quote'}
+      </button>
+
+      <p style={styles.footer}>Quotes from type.fit API</p>
+    </div>
+  );
+}
+
+const styles = {
+  container: {
+    fontFamily: 'Arial, sans-serif',
+    textAlign: 'center',
+    padding: '40px',
+    maxWidth: '600px',
+    margin: '50px auto',
+    border: '1px solid #e0e0e0',
+    borderRadius: '12px',
+    boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+    backgroundColor: '#ffffff',
+  },
+  quoteCard: {
+    backgroundColor: '#f8f8f8',
+    padding: '30px',
+    borderRadius: '8px',
+    marginBottom: '30px',
+    borderLeft: '5px solid #007bff',
+  },
+  quoteText: {
+    fontSize: '1.5em',
+    fontStyle: 'italic',
+    color: '#333',
+    marginBottom: '15px',
+    lineHeight: '1.5',
+  },
+  quoteAuthor: {
+    fontSize: '1em',
+    color: '#666',
+    fontWeight: 'bold',
+    textAlign: 'right',
+  },
+  message: {
+    color: '#007bff',
+    fontSize: '1.2em',
+    margin: '20px 0',
+  },
+  error: {
+    color: '#dc3545',
+    fontSize: '1.2em',
+    margin: '20px 0',
+  },
+  button: {
+    backgroundColor: '#007bff',
+    color: 'white',
+    padding: '12px 25px',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '1.1em',
+    fontWeight: 'bold',
+    transition: 'background-color 0.3s ease, transform 0.2s ease',
+  },
+  buttonDisabled: {
+    backgroundColor: '#cccccc',
+    cursor: 'not-allowed',
+  },
+  buttonHover: {
+    backgroundColor: '#0056b3',
+  },
+  footer: {
+    marginTop: '40px',
+    fontSize: '0.9em',
+    color: '#999',
+  }
+};
+
+
+export default QuoteFetcher;
